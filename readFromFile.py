@@ -8,13 +8,11 @@ class ConfigParser:
         self.constants = {}
 
     def remove_comments(self, text):
-        """Удаляет однострочные и многострочные комментарии."""
-        text = re.sub(r"%.*", "", text)  # Удаляем однострочные комментарии
-        text = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)  # Удаляем многострочные комментарии
+        text = re.sub(r"%.*", "", text) 
+        text = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL) 
         return text.strip()
 
     def join_multiline(self, lines):
-        """Объединяет строки для многострочных структур (словари, массивы)."""
         result = []
         buffer = []
         open_brackets = 0
@@ -28,16 +26,15 @@ class ConfigParser:
             open_brackets -= line.count("}") + line.count("]")
 
             buffer.append(line)
-            if open_brackets == 0:  # Структура завершена
+            if open_brackets == 0:
                 result.append(" ".join(buffer))
                 buffer = []
 
-        if buffer:  # Если остались незавершённые строки
+        if buffer: 
             raise SyntaxError("Unmatched brackets in input.")
         return result
 
     def split_top_level(self, text, delimiter):
-        """Разделяет строку на элементы по делимитеру, учитывая вложенность."""
         parts = []
         bracket_stack = []
         current = []
@@ -57,16 +54,15 @@ class ConfigParser:
         return parts
 
     def parse_value(self, value):
-        """Рекурсивный разбор значений."""
         value = value.strip()
-        if value.isdigit():  # Числа
+        if value.isdigit(): 
             return int(value)
-        elif value.startswith('"') and value.endswith('"'):  # Строки
+        elif value.startswith('"') and value.endswith('"'):  
             return value.strip('"')
-        elif value.startswith("[") and value.endswith("]"):  # Массивы
+        elif value.startswith("[") and value.endswith("]"): 
             elements = self.split_top_level(value[1:-1], ",")
             return [self.parse_value(e) for e in elements]
-        elif value.startswith("{") and value.endswith("}"):  # Словари
+        elif value.startswith("{") and value.endswith("}"):
             pairs = self.split_top_level(value[1:-1], ",")
             result = {}
             for pair in pairs:
@@ -75,7 +71,7 @@ class ConfigParser:
                 name, val = pair.split("=", 1)
                 result[name.strip()] = self.parse_value(val.strip())
             return result
-        elif value.startswith("^(") and value.endswith(")"):  # Вычисление константы
+        elif value.startswith("^(") and value.endswith(")"):
             name = value[2:-1].strip()
             if name not in self.constants:
                 raise ValueError(f"Константа '{name}' не определена.")
@@ -84,7 +80,6 @@ class ConfigParser:
             raise SyntaxError(f"Неизвестный формат значения: {value}")
 
     def parse_constant(self, line):
-        """Разбирает объявление константы."""
         match = re.match(r"def\s+([_A-Za-z][_A-Za-z0-9]*)\s*=\s*(.+);", line)
         if not match:
             raise SyntaxError(f"Некорректное объявление константы: {line}")
@@ -92,24 +87,20 @@ class ConfigParser:
         self.constants[name] = self.parse_value(value)
 
     def parse(self, text):
-        """Парсит текст и возвращает данные."""
         text = self.remove_comments(text)
         lines = text.split("\n")
-        joined_lines = self.join_multiline(lines)  # Объединяем многострочные структуры
+        joined_lines = self.join_multiline(lines)
 
         result = {}
 
-        # Сначала добавляем константы
         for line in joined_lines:
             if line.startswith("def"):
                 self.parse_constant(line)
 
-        # Теперь добавляем остальные значения, игнорируя строку с "def"
         for line in joined_lines:
             if line.startswith("def"):
-                continue  # Игнорируем строки с "def"
+                continue 
 
-            # Добавим проверку для некорректных строк
             if "=" not in line:
                 raise SyntaxError(f"Некорректная строка: {line} (отсутствует знак =)")
 
@@ -119,10 +110,8 @@ class ConfigParser:
             name, value = line[:-1].split("=", 1)
             result[name.strip()] = self.parse_value(value.strip())
 
-        # Обновляем результат константами
         result.update(self.constants)
 
-        # Константы в начале
         final_result = {}
         final_result.update(self.constants)  # Сначала константы
         final_result.update(result)  # Затем остальная конфигурация
