@@ -2,7 +2,7 @@ import unittest
 from io import StringIO
 import sys
 from contextlib import redirect_stdout
-from main import ConfigParser  # Импортируем парсер из основного файла
+from readFromFile import ConfigParser
 
 class TestConfigParser(unittest.TestCase):
 
