@@ -1,0 +1,13 @@
+% Настройка кластера баз данных
+def replication_factor = 3;
+cluster = {
+    nodes = [
+        { id = 1, ip = "192.168.1.1" },
+        { id = 2, ip = "192.168.1.2" },
+        { id = 3, ip = "192.168.1.3" }
+    ],
+    settings = {
+        replication = ^(replication_factor),
+        consistency = "quorum"
+    }
+};
